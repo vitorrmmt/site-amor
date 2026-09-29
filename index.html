@@ -80,6 +80,10 @@ footer{text-align:center;padding:30px 24px calc(env(safe-area-inset-bottom,0px) 
 #fin.on .msg{opacity:1;transform:none}
 .sp{position:absolute;left:50%;top:44%;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);animation:sp 1.8s ease-out forwards}
 @keyframes sp{to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}}
+
+#snd{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:14px;z-index:70;width:48px;height:48px;padding:0;border-radius:50%;border:1px solid rgba(239,228,214,.3);background:rgba(13,9,8,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--fg);display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity 1.2s .8s}
+.ready #snd{opacity:1;pointer-events:auto}
+#snd svg{width:22px;height:22px}#snd .x{display:none}#snd.off .x{display:block}#snd.off .w{opacity:.35}
 </style>
 </head>
 <body>
@@ -113,6 +117,8 @@ footer{text-align:center;padding:30px 24px calc(env(safe-area-inset-bottom,0px) 
 <svg id="hrt" viewBox="0 0 100 90" aria-hidden="true"><path d="M50 84C18 60 4 42 4 26 4 13 14 4 26 4c9 0 18 5 24 14C56 9 65 4 74 4c12 0 22 9 22 22 0 16-14 34-46 58Z" fill="#c9705f"/></svg>
 <div class="msg"><p class="serif" style="font-size:34px;margin:30px 0 8px">Então tá combinado.</p><p class="serif" style="font-size:22px;color:var(--gold);margin:0 0 34px">A vida toda.</p><button type="button" class="btn" id="fclose">continuar</button></div>
 </div>
+<audio id="bgm" src="musica.mp3" loop preload="auto"></audio>
+<button type="button" id="snd" aria-label="Ligar ou desligar a música"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M3 3l18 18"/></svg></button>
 <div id="toast" role="status"></div>
 
 <script>
@@ -155,7 +161,7 @@ $('#caps').innerHTML=CAPSULES.map(c=>`<button class="env" aria-expanded="false">
 document.querySelectorAll('.env').forEach(b=>b.onclick=()=>{const o=b.classList.toggle('open');b.setAttribute('aria-expanded',o)});
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}}),{threshold:.35});
 document.querySelectorAll('.ch,#fut').forEach(e=>io.observe(e));
-$('#go').addEventListener('click',()=>{document.body.classList.add('ready');const y=$('#album').getBoundingClientRect().top+scrollY;try{scrollTo({top:y,behavior:'smooth'})}catch(e){scrollTo(0,y)}});
+$('#go').addEventListener('click',()=>{document.body.classList.add('ready');startMusic();const y=$('#album').getBoundingClientRect().top+scrollY;try{scrollTo({top:y,behavior:'smooth'})}catch(e){scrollTo(0,y)}});
 const toast=t=>{const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>e.classList.remove('on'),4200)};
 $('#dot').onclick=()=>toast(SECRET);
 let k=0;$('#names').onclick=()=>{if(++k===5){toast("Cinco toques no nosso nome. Eu gosto de quem presta atenção.");k=0}};
@@ -185,6 +191,12 @@ function askInit(){
 }
 $('#fclose').onclick=()=>$('#fin').classList.remove('on');
 qShow();
+/* música: começa no toque em "revelar" (o iPhone exige um toque) */
+const bgm=$('#bgm'),snd=$('#snd');let want=false,fade;
+function fadeTo(v,ms){clearInterval(fade);const s=bgm.volume,st=20,d=(v-s)/(ms/st);fade=setInterval(()=>{const n=bgm.volume+d;if((d>0&&n>=v)||(d<=0&&n<=v)){bgm.volume=v;clearInterval(fade);if(v===0)bgm.pause()}else bgm.volume=Math.max(0,Math.min(1,n))},st)}
+function startMusic(){if(want)return;want=true;bgm.volume=0;const p=bgm.play();if(p&&p.catch)p.catch(()=>{want=false;snd.classList.add('off')});fadeTo(.6,2500);snd.classList.remove('off')}
+snd.addEventListener('click',()=>{if(snd.classList.toggle('off')){want=false;fadeTo(0,500)}else{want=true;bgm.play().catch(()=>{});fadeTo(.6,800)}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgm.pause();else if(want)bgm.play().catch(()=>{})});
 </script>
 </body>
 </html>
